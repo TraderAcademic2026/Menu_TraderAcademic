@@ -1,0 +1,17 @@
+{
+  "name": "Menu Trader",
+  "description": "Links Oficiais",
+  "profileImage": "",
+  "coverImage": "",
+  "hours": "Disponível 24h",
+  "links": [
+    {
+      "id": "1",
+      "title": "WhatsApp",
+      "subtitle": "Fale conosco",
+      "url": "https://wa.me/5500000000000",
+      "icon": "MessageCircle",
+      "color": "bg-green-600"
+    }
+  ]
+}
