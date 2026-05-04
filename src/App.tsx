@@ -23,6 +23,7 @@ import {
   Facebook
 } from "lucide-react";
 import { AppConfig, LinkItem } from "./types";
+import { supabase } from "./lib/supabase";
 
 // Mapeamento de ícones para exibição dinâmica
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -67,20 +68,47 @@ export default function App() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/config")
-      .then((res) => {
-        if (!res.ok) throw new Error("Erro ao carregar dados");
-        return res.json();
-      })
-      .then((data) => {
-        setConfig(data);
+    const fetchData = async () => {
+      try {
+        const { data: configData, error: configError } = await supabase
+          .from('app_config')
+          .select('*')
+          .single();
+
+        if (configError) throw configError;
+
+        const { data: linksData, error: linksError } = await supabase
+          .from('links')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (linksError) throw linksError;
+
+        const fullConfig: AppConfig = {
+          name: configData.name,
+          description: configData.description,
+          profileImage: configData.profile_image,
+          coverImage: configData.cover_image,
+          hours: configData.hours,
+          links: linksData.map((l: any) => ({
+            id: l.id,
+            title: l.title,
+            subtitle: l.subtitle,
+            url: l.url,
+            icon: l.icon,
+            color: l.color
+          }))
+        };
+
+        setConfig(fullConfig);
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
-        // Fallback para caso o servidor demore ou falhe na primeira vez
-        setTimeout(() => setLoading(false), 5000); 
-      });
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -106,11 +134,36 @@ export default function App() {
   const saveConfig = async (newConfig: AppConfig) => {
     setSaving(true);
     try {
-      await fetch("/api/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newConfig),
-      });
+      // 1. Atualiza Configurações Gerais
+      const { error: configError } = await supabase
+        .from('app_config')
+        .update({
+          name: newConfig.name,
+          description: newConfig.description,
+          profile_image: newConfig.profileImage,
+          cover_image: newConfig.coverImage,
+          hours: newConfig.hours
+        })
+        .eq('id', 1);
+
+      if (configError) throw configError;
+
+      // 2. Sincroniza Links (Deleta todos e reinsere para simplificar o Menu Trader)
+      // Nota: Em apps maiores usaríamos upsert, mas para o Menu Trader o replace total é seguro.
+      await supabase.from('links').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      const linksToInsert = newConfig.links.map((l, index) => ({
+        title: l.title,
+        subtitle: l.subtitle,
+        url: l.url,
+        icon: l.icon,
+        color: l.color,
+        sort_order: index
+      }));
+
+      const { error: linksError } = await supabase.from('links').insert(linksToInsert);
+      if (linksError) throw linksError;
+
       setConfig(newConfig);
     } catch (error) {
       console.error("Erro ao salvar:", error);
