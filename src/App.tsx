@@ -293,13 +293,13 @@ export default function App() {
             className="w-full flex flex-col items-center pb-12"
           >
             {/* Capa estilo WhatsApp */}
-            <div className="w-full h-40 relative bg-market-blue/30 overflow-hidden">
+            <div className="w-full md:max-w-2xl h-40 sm:h-56 md:h-72 relative bg-market-blue/30 overflow-hidden md:rounded-b-[40px] shadow-2xl">
               {config.coverImage ? (
                 <img src={config.coverImage} alt="Capa" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full market-gradient opacity-50" />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-market-dark/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-market-dark/80 via-transparent to-transparent" />
             </div>
 
             <div className="w-full max-w-sm flex flex-col items-center px-6 -mt-12 relative z-10">
